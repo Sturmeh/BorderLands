@@ -1,0 +1,116 @@
+This plug-in forces players to stay within a DEFINED block distance of predefined points whilst exploring.
+
+If you leave the DEFINED block distance, you are blocked...
+
+
+...and if you try to teleport out, you are prevented from doing so.
+
+
+NOTE: If you are outside of the border when the border changes or you log in after having borders added, you will be teleported to the NEAREST border centre.
+
+This plug-in just creates an almost physical (it's invisible!) barrier preventing the player from trespassing.
+
+Users can optionally be made exempt from the border limitation, see in config.
+
+USING RADIUS:
+I fully understand people wanting to use radius instead of a square border, and it's more mathematically sound.
+However I need to make sure YOU understand what's going on here.
+
+
+
+x is the radius, the border originates from the centre, the square is the area you can explore with the default use-radius-only set to false, the circle is what you can explore if it is set to true.
+
+Additionally calculating a circular radius is slightly more computationally expensive than calculating the distance on the x and z axis. ( NOTE: This is ONLY why it is set as default, it is NOT a good enough reason to change your entire world. So set it to radius if you like a circle map! )
+
+
+USER MANUAL:
+(3rd December, 2010 05:51 am)EvilSeph Wrote:  
+The system has been completely revamped.
+
+Borders are now setup on the fly, in game by Admins using the /border command.
+
+If you're updating to the Borderlands v2.0, you'll need to EDIT the default "spawn" border that it creates to one that uses the distance/size you want to use (for example, 1000 instead of the default 500), like so:
+1. /border edit spawn 1000 true
+2. ???
+3. PROFIT!?
+
+If you used the warps feature as well, you'll have to either import all your warps in game using /border import warpname distance/size or edit borders.txt.
+
+You need to specify PVP enabled/disabled in a zone with true/false.
+
+Borders can now be set per group by specifying a group name after the distance/size, like so:
+/border add adminzone 500 true admins 
+
+Simply use /border and you'll get some help.
+
+I think that's all. Post if you have any issues and we'll try and help you out as best we can.
+
+Edit: I forgot to clarify that "spawn" is not a special keyword or anything, you need to ACTUALLY be at the spawnpoint to recreate the spawn with a larger border otherwise your new "spawn" border will be based on where you're standing when you create it.
+
+For safety reasons, you need to add a dummy border before you delete the default spawn border to increase or decrease its size.
+
+I also looked through the code and see that use-radius-instead is, in fact, used. So you can still choose if you want to use a radius or not 
+
+In SETTINGS: (now under borderLands.txt)
+
+enable-blexempt-permission - Set this to true to prevent players with /blexempt from being blocked. (false)
+use-radius-instead - Set this to true if you wish to use circle style borders. (false)
+border-hit-msg - Message to send to the client sometimes when they reach a borderline.
+teleport-blocked-msg - Message for when a player tries to teleport out of bounds.
+
+THE OTHER SETTINGS HAVE BEEN REMOVED!
+
+Future TO-DO:
+Enable / Disable PVP per Zone
+Hook Respawn to nearest Border!
+Lots more...
+
+
+Feedback will be greatly appreciated! 
+Please consider donating! ( See signature for link. )
+
+Version History:
+v2.2 - OUCH!
+-- Added PVP enable/disable per border. ( You can't deny PVP inside a border that allows PVP yet. )
+-- GREATLY IMPROVED Border bounce method, won't get you stuck in walls and weird stuff anymore!
+-- Other bugfixes and optimisations.
+KNOWN ISSUE: Attempting to ride a vehicle out of the border will cause a loop of teleports, the only way to stop it currently is to get out of the vehicle, which is not easy.
+
+v2.1 - MOAR!
+-- Added edit and exempt commands to the /border system.
+-- Added an alias '/bl' as a short version of '/border' ( No longer allows '/b' )
+-- You can edit borders safely, without risk of being caught in a no border zone.
+-- You can now temporarily exclude (exempt) players from the Border system.
+-- Fixed a bunch of bugs!
+
+v2.0 - REVAMP!
+-- Borders are now defined separately in borders.txt ( If you have none, it will add spawn for you. )
+-- Borders can now have their sizes defined individually. ( This allows for overlap! )
+-- You can restrict borders to certain groups. ( Honours inheritance! )
+-- You can CREATE new borders on the spot!
+-- Added the /border (alias /b) command for adding/removing/importing/listing/warping to borders!
+-- You can import warps! ( You just need to specify a distance/size. )
+-- You are now returned to the point the border was defined when you are stranded.
+
+v1.25 - Minor bug fixes, solves problems with new configs.
+
+v1.24 - Fixed several major bugs in 1.22/1.23 ... thanks to [ND]unimatrix for testing.
+
+v1.23 - Now 'admins-are-exempt' uses the '/blexempt' command not the Administrator level.
+
+v1.22 - Use of warps now defaults to FALSE, please read the config and change this appropriately!
+
+v1.21 - Now checks for case where player has access to no warps. ( Was previously crashing on join. )
+
+v1.2 - Allowed user driven expansion of borders extending the by existing warp interface!
+-- Now optionally uses all the warp points that the user has access too. ( Even if they can't use /warp )
+-- Admins are optionally exempt from being blocked. (Defaults to false.)
+-- The "on-border-hit" message will only be played a tenth of the time, to prevent chat spam.
+
+v1.1 - New method for preventing teleportation, no more pseudo returning players out of bounds.
+-- If a player is out of bounds when the config is changed or plug-in is enabled, they are sent to spawn.
+-- If a player or admin attempts to teleport (warp/quickport/poembook/etc.) out, it will be prevented.
+
+v1.01 - Fixed several serious bugs, should have come up in testing. D:
+
+v1.0 - First release.
