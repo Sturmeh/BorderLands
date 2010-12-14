@@ -253,6 +253,25 @@ public class Border {
 
         return solution;
     }
+    
+    public static Border smallestBorder(Player player) {
+        double size = -1;
+        Border solution = null;
+
+        Collection<Border> b = borders.values();
+        Iterator<Border> all = b.iterator();
+
+        while (all.hasNext()) {
+            Border border = all.next();
+            if (player.isInGroup(border.group) && border.contains(player)) {
+                if (size == -1 || border.radius < size) {
+                    solution = border;
+                }
+            }
+        }
+
+        return solution;
+    }
 
     public static void listBorders(Player player) {
         Collection<Border> b = borders.values();

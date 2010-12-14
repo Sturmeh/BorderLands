@@ -14,8 +14,7 @@ public class BorderLands extends SuperPlugin {
     private static boolean hallPass;
 
     private ArrayList<String> immune;
-
-    //public BorderLands() { super("borderLands"); }
+    
     public BorderLands() { 
         super("BorderLands", 2.3f, "borderlands");
         
@@ -229,8 +228,6 @@ public class BorderLands extends SuperPlugin {
         return useRadius;
     }
     
-    
-
     private class Listener extends PluginListener {
         public void onPlayerMove(Player player, Location from, Location to) { applyReaction(player, from, to, false); }
         
