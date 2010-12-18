@@ -22,28 +22,27 @@ public class Border {
     private Position centre;
     private double radius;
     private String group;
-    private boolean pvp;
+    public Law rule;
     private static HashMap<String, Border> borders;
     private static final String BORDER_FILE = "borders.txt";
     public static double BORDER_DEFAULT_SIZE = 500;
 
-    private Border(String name, Position centre, double radius, String group, boolean pvp) {
+    private Border(String name, Position centre, double radius, String group) {
+        this.rule = new Law();
         this.name = name;
         this.centre = centre;
         this.radius = radius;
         this.group = group;
-        this.pvp = pvp;
     }
 
     // Static content...
 
-    public static void createNewBorder(String name, Position centre, double radius, String group, boolean pvp) {
-        borders.put(name, new Border(name, centre, radius, group, pvp));
+    public static void createNewBorder(String name, Position centre, double radius, String group) {
+        borders.put(name, new Border(name, centre, radius, group));
         saveAllBorders();
     }
 
-    public static boolean addNewBorder(String name, Player player, Location loc, 
-            String radius_, String group, String pvp_) {
+    public static boolean addNewBorder(String name, Player player, Location loc, String radius_, String group) {
         Position centre = new Position(loc);
         double radius = 0.0;
 
@@ -69,18 +68,16 @@ public class Border {
             return false;
         }
 
-        boolean pvp = Boolean.parseBoolean(pvp_);
-
-        createNewBorder(name, centre, radius, group, pvp);
+        createNewBorder(name, centre, radius, group);
         return true;
     }
 
-    public static boolean addNewBorder(Warp warp, Player player, String radius, String pvp) {
+    public static boolean addNewBorder(Warp warp, Player player, String radius) {
         String name = warp.Name;
         Location loc = warp.Location;
         String group = warp.Group;
         if (group == null || group.isEmpty()) group = etc.getDataSource().getDefaultGroup().Name;
-        return addNewBorder(name, player, loc, radius, group, pvp);
+        return addNewBorder(name, player, loc, radius, group);
     }
 
     public static boolean removeBorder(String name) {
@@ -118,10 +115,16 @@ public class Border {
                     Position centre = new Position(split[1], split[2], split[3]);
                     double radius = Double.parseDouble(split[4]);
                     String group = split[5];
-                    boolean pvp = true;
-                    if (split.length == 7) pvp = Boolean.parseBoolean(split[6]);
 
-                    borders.put(name, new Border(name, centre, radius, group, pvp));
+                    Border toAdd = new Border(name, centre, radius, group);
+                    borders.put(name, toAdd);
+
+                    if (split.length == 7) {
+                        if (split[6].contains("="))
+                            toAdd.rule.loadFromString(split[6]);
+                        else
+                            toAdd.rule.loadFromString(Law.Rule.PVP.toString() + "=" + split[6]);
+                    }
                 }
                 scanner.close();
             } catch (Exception e) {
@@ -129,7 +132,7 @@ public class Border {
             }
         } else {
             Position centre = new Position(etc.getServer().getSpawnLocation());
-            Border border = new Border("spawn", centre, BORDER_DEFAULT_SIZE, etc.getDataSource().getDefaultGroup().Name, true);
+            Border border = new Border("spawn", centre, BORDER_DEFAULT_SIZE, etc.getDataSource().getDefaultGroup().Name);
             borders.put(border.name, border);
             saveAllBorders();
         }
@@ -157,7 +160,7 @@ public class Border {
                 builder.append(':');
                 builder.append(toSave.group);
                 builder.append(':');
-                builder.append(toSave.pvp);
+                builder.append(toSave.rule);
 
                 bw.append(builder.toString());
                 bw.newLine();
@@ -169,44 +172,27 @@ public class Border {
         }
     }
 
-    public static boolean pvpSanctioned(Player attacker, Player defender) {  
-        Collection<Border> b = borders.values();
-        Iterator<Border> all = b.iterator();
-
-        boolean att = false;
-        boolean def = false;
-
-        while (all.hasNext()) {
-            Border border = all.next();
-            if (border.pvp) {
-                if (attacker.isInGroup(border.group) && border.contains(attacker)) {
-                    att = true;
-                }
-                if (defender.isInGroup(border.group) && border.contains(defender)) {
-                    def = true;
-                }
-            }
-            if (att && def) return true;
-        }
-
-        return false;
+    public static boolean isSanctioned(Law.Rule action, Location point) {
+        Border local = smallestBorder(point);
+        if (local == null) return false;
+        return smallestBorder(point).rule.getPolicy(action);
     }
 
-    public static Border.Bounds outOfBounds(Player player, Location from, Location to) {
+    public static boolean isSanctioned(Law.Rule action, Player player, Location point) {
+        Border local = smallestBorder(point);
+        if (local == null || !player.isInGroup(local.group)) return false;
+        return smallestBorder(point).rule.getPolicy(action);
+    }
+
+    public static boolean isSanctioned(Law.Rule action, Player player) {
+        return isSanctioned(action, player, player.getLocation());
+    }
+
+    public static Border.Bounds outOfBounds(Player player, Location from, Location to, Law.Rule action) {
         boolean AWOL = true;
 
-        Collection<Border> b = borders.values();
-        Iterator<Border> all = b.iterator();
-
-        while (all.hasNext()) {
-            Border border = all.next();
-            if (player.isInGroup(border.group)) {
-                if (border.contains(from))
-                    AWOL = false;
-                if (border.contains(to)) 
-                    return Border.Bounds.INSIDE;
-            }
-        }
+        if (isSanctioned(action, player, from)) AWOL = false;
+        if (isSanctioned(action, player, to)) return Border.Bounds.INSIDE;
 
         if (AWOL) return Border.Bounds.AWOL;
         return Border.Bounds.OUTSIDE;
@@ -221,7 +207,7 @@ public class Border {
             if (vehicle.isEmpty() || vehicle.getPassenger() == null || vehicle.getPassenger().isInGroup(border.group))
                 if (border.contains(x, z)) return;
         }
-        
+
         if (Border.containsAll(x+1, z)) {
             vehicle.teleportTo(x+1.5, y, z, 0, 0);
         } else if (Border.containsAll(x, z+1)) {
@@ -253,8 +239,8 @@ public class Border {
 
         return solution;
     }
-    
-    public static Border smallestBorder(Player player) {
+
+    public static Border smallestBorder(Location point) {
         double size = -1;
         Border solution = null;
 
@@ -263,7 +249,7 @@ public class Border {
 
         while (all.hasNext()) {
             Border border = all.next();
-            if (player.isInGroup(border.group) && border.contains(player)) {
+            if (border.contains(point)) {
                 if (size == -1 || border.radius < size) {
                     solution = border;
                 }
@@ -277,23 +263,21 @@ public class Border {
         Collection<Border> b = borders.values();
         Iterator<Border> all = b.iterator();
         player.sendMessage(Colors.Yellow+"Borders:");
-        player.sendMessage(Colors.Yellow+"Name  | Size | Group  | PVP  | Distance");
-        player.sendMessage(Colors.Yellow+"-------------------------------");
+        player.sendMessage(Colors.Yellow+"Name  | Size | Group | Distance");
+        player.sendMessage(Colors.Yellow+"----------------------");
         while (all.hasNext()) {
             Border border = all.next();
-            if (player.isInGroup(border.group)) {
-                player.sendMessage(Colors.Yellow+border.name+" | "+
-                        (int)border.radius+" | "+border.group+" | "+
-                        String.valueOf(border.pvp)+" | "+
-                        (int)border.centre.distanceBetween(player));
-            }
+            player.sendMessage(Colors.Yellow+border.name+" | "+
+                    (int)border.radius+" | "+border.group+" | "+
+                    (int)border.centre.distanceBetween(player));
+
         }
     }
 
     public static int borderCount() {
         return borders.size();
     }
-    
+
     public static boolean containsAll(double x, double z) {
         Collection<Border> b = borders.values();
         Iterator<Border> all = b.iterator();
@@ -302,7 +286,7 @@ public class Border {
             Border border = all.next();
             if (border.contains(x, z)) return true;
         }
-        
+
         return false;
     }
 
@@ -315,7 +299,7 @@ public class Border {
     }
 
     // Specific content...
-    public boolean modify(Player player, String radius_, String group, String pvp_) {
+    public boolean modify(Player player, String radius_, String group) {
         double radius;
         try {
             radius = Double.parseDouble(radius_);
@@ -331,7 +315,6 @@ public class Border {
 
         this.radius = radius;
         this.group = group;
-        this.pvp = Boolean.parseBoolean(pvp_);
 
         saveAllBorders();
 
@@ -342,7 +325,7 @@ public class Border {
         player.teleportTo(centre.toLocation());
         player.sendMessage(Colors.Yellow + "You were stranded, and thus returned to "+name+".");
     }
-    
+
     public boolean contains(double x, double z) {
         return (centre.distanceBetween(x, z) < radius);
     }
