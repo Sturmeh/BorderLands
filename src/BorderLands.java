@@ -16,7 +16,7 @@ public class BorderLands extends SuperPlugin {
     private ArrayList<String> immune;
 
     public BorderLands() { 
-        super("BorderLands", 2.4f, "borderlands");
+        super("BorderLands", 2.5f, "borderlands");
 
         File oldFile = new File("borderLands.txt");
 
@@ -197,6 +197,7 @@ public class BorderLands extends SuperPlugin {
                         Border toSet = Border.getBorder(split[2]);
                         if (toSet != null) {
                             if (toSet.rule.setPolicy(split[3].toUpperCase(), split[4])) {
+                                Border.saveAllBorders();
                                 player.sendMessage(Colors.Green+"Law set!");
                             } else {
                                 player.sendMessage(Colors.Rose+"No such law.");
@@ -299,7 +300,8 @@ public class BorderLands extends SuperPlugin {
         }
 
         public boolean onIgnite(Block block, Player player) {
-            return (!Border.isSanctioned(Law.Rule.IGNITE, player));
+            if (player == null) return false;
+            return (!Border.isSanctioned(Law.Rule.IGNITE, player, new Location(block.getX(),block.getY(),block.getZ())));
         }
 
         public boolean onExplode(Block block) {

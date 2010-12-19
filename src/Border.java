@@ -233,6 +233,7 @@ public class Border {
             if (player.isInGroup(border.group)) {
                 if (range == -1 || border.centre.distanceBetween(player) > range) {
                     solution = border;
+                    range = border.centre.distanceBetween(player);
                 }
             }
         }
@@ -251,6 +252,29 @@ public class Border {
             Border border = all.next();
             if (border.contains(point)) {
                 if (size == -1 || border.radius < size) {
+                    solution = border;
+                    size = border.radius;
+                }
+            }
+        }
+
+        return solution;
+    }
+    
+    public static Border smallestBorder(Player player) {
+        double size = -1;
+        Border solution = null;
+
+        Collection<Border> b = borders.values();
+        Iterator<Border> all = b.iterator();
+
+        while (all.hasNext()) {
+            Border border = all.next();
+            if (border.contains(player)) {
+                if (size == -1 || border.radius < size) {
+                    solution = border;
+                    size = border.radius;
+                } else if (size == border.radius && player.isInGroup(border.group)) {
                     solution = border;
                 }
             }
