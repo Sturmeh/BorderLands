@@ -2,8 +2,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Scanner;
 import java.util.logging.Level;
 /**
@@ -23,7 +23,7 @@ public class Border {
     private double radius;
     private String group;
     public Law rule;
-    private static HashMap<String, Border> borders;
+    private static LinkedHashMap<String, Border> borders;
     private static final String BORDER_FILE = "borders.txt";
     public static double BORDER_DEFAULT_SIZE = 500;
 
@@ -96,7 +96,7 @@ public class Border {
 
     public static void loadAllBorders() {
         if (borders == null) {
-            borders = new HashMap<String, Border>();
+            borders = new LinkedHashMap<String, Border>();
         } else {
             borders.clear();
         }
@@ -173,15 +173,15 @@ public class Border {
     }
 
     public static boolean isSanctioned(Law.Rule action, Location point) {
-        Border local = smallestBorder(point);
+        Border local = smallestBorder(point, null);
         if (local == null) return false;
-        return smallestBorder(point).rule.getPolicy(action);
+        return smallestBorder(point, null).rule.getPolicy(action);
     }
 
     public static boolean isSanctioned(Law.Rule action, Player player, Location point) {
-        Border local = smallestBorder(point);
+        Border local = smallestBorder(point, player);
         if (local == null || !player.isInGroup(local.group)) return false;
-        return smallestBorder(point).rule.getPolicy(action);
+        return smallestBorder(point, player).rule.getPolicy(action);
     }
 
     public static boolean isSanctioned(Law.Rule action, Player player) {
@@ -198,7 +198,14 @@ public class Border {
         return Border.Bounds.OUTSIDE;
     }
 
-    public static void outOfBounds(BaseVehicle vehicle, int x, int y, int z) {  
+    public static void outOfBounds(BaseVehicle vehicle, int x, int y, int z) {
+        boolean permit;
+        if (vehicle.isEmpty() || vehicle.getPassenger() == null) {
+            permit = isSanctioned(Law.Rule.MOVE, new Location(x, y, z));
+        } else {
+            permit = isSanctioned(Law.Rule.MOVE, vehicle.getPassenger(), new Location(x, y, z));
+        }
+        /*
         Collection<Border> b = borders.values();
         Iterator<Border> all = b.iterator();
 
@@ -207,7 +214,7 @@ public class Border {
             if (vehicle.isEmpty() || vehicle.getPassenger() == null || vehicle.getPassenger().isInGroup(border.group))
                 if (border.contains(x, z)) return;
         }
-
+        
         if (Border.containsAll(x+1, z)) {
             vehicle.teleportTo(x+1.5, y, z, 0, 0);
         } else if (Border.containsAll(x, z+1)) {
@@ -215,6 +222,20 @@ public class Border {
         } else if (Border.containsAll(x-2, z)) {
             vehicle.teleportTo(x-1.5, y, z, 0, 0);
         } else if (Border.containsAll(x, z-2)) {
+            vehicle.teleportTo(x, y, z-1.5, 0, 0);
+        } else {
+            vehicle.destroy();
+        }
+        */
+        if (permit) return;
+        
+        if (isSanctioned(Law.Rule.MOVE, new Location(x+1, y, z))) {
+            vehicle.teleportTo(x+1.5, y, z, 0, 0);
+        } else if (isSanctioned(Law.Rule.MOVE, new Location(x, y, z+1))) {
+            vehicle.teleportTo(x, y, z+1.5, 0, 0);
+        } else if (isSanctioned(Law.Rule.MOVE, new Location(x-2, y, z))) {
+            vehicle.teleportTo(x-1.5, y, z, 0, 0);
+        } else if (isSanctioned(Law.Rule.MOVE, new Location(x, y, z-2))) {
             vehicle.teleportTo(x, y, z-1.5, 0, 0);
         } else {
             vehicle.destroy();
@@ -241,7 +262,7 @@ public class Border {
         return solution;
     }
 
-    public static Border smallestBorder(Location point) {
+    public static Border smallestBorder(Location point, Player player) {
         double size = -1;
         Border solution = null;
 
@@ -254,13 +275,15 @@ public class Border {
                 if (size == -1 || border.radius < size) {
                     solution = border;
                     size = border.radius;
+                } else if (player != null && size == border.radius && player.isInGroup(border.group)) {
+                    solution = border;
                 }
             }
         }
 
         return solution;
     }
-    
+    /*
     public static Border smallestBorder(Player player) {
         double size = -1;
         Border solution = null;
@@ -282,7 +305,7 @@ public class Border {
 
         return solution;
     }
-
+     */
     public static void listBorders(Player player) {
         Collection<Border> b = borders.values();
         Iterator<Border> all = b.iterator();
