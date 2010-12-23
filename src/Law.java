@@ -58,7 +58,7 @@ public class Law {
         if (props.length < 1) return;
         for (String setting : props) {
             if (setting.isEmpty() || !setting.contains("=")) continue;
-            String[] prop = word.split("=");
+            String[] prop = setting.split("=");
             if (prop.length != 2 || prop[0].isEmpty() || prop[1].isEmpty()) continue;
             setPolicy(prop[0], prop[1]);
         }
